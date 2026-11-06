@@ -132,7 +132,7 @@ analysis_df %>% filter(unemployment_rate > 20) %>% distinct(COUNTRY)
 
 ## Project Proposal/Statistical Analysis Plan
 
-Link to your team's Github Repo:
+Link to your team's Github Repo: <https://github.com/chen04301121-cmyk/ids702-ai-unemployment>
 
 ### Dataset Option 1
 
@@ -180,17 +180,59 @@ Describe the observation units and how the data were collected.
 
 #### 4 Statistical Analysis Plan
 
-4.1 Exploratory Data Analysis
+**4.1 Exploratory Data Analysis**
 
-*Detail how you will investigate the data, including basic characteristics of the outcome and independent variable(s) of interest (e.g., "The outcome is continuous, so we will generate a histogram of the outcome. Then, we will generate a stacked histogram/scatter plot to explore the relationship between the outcome and the independent variable")*
+The outcome (quarterly unemployment rate) is continuous, so we will summarize it with descriptive statistics and a histogram to assess its distribution and identify extreme values. Because our primary independent variable (the share of job postings requiring emerging AI skills) is also continuous, we will use a scatter plot of unemployment against AI adoption, with points colored and separate linear fits drawn by economy group (advanced vs. emerging/developing), to explore both the main relationship and the planned interaction. Given the skewness of both variables, we will also present this plot on log scales. Finally, we will present a Table 1 of medians and interquartile ranges for the outcome, AI adoption measures, and macroeconomic covariates by economy group, and we will summarize missingness across countries and quarters.
 
-**4.2 Statistical Model (write in mathematical notation and define each term)**
+**4.2 Statistical Model**
 
-**4.2 Rationale for the statistical model (why are you choosing to use this type of model? What about your data structure/characteristics are you accommodating with this model type?)**
+We will fit a linear mixed-effects model with a random intercept for each economy:
+
+$$\begin{aligned}
+\log(\text{Unemp}_{it}) = \; & \beta_0 + \beta_1 \log(1 + \text{AI}_{it}) + \beta_2 \text{Adv}_i + \beta_3 \left[\log(1 + \text{AI}_{it}) \times \text{Adv}_i\right] \\
+& + \beta_4 \text{GDPgrowth}_{it} + \beta_5 \text{Inflation}_{it} + \beta_6 \log(\text{GDPpc}_{it}) \\
+& + \sum_{y} \gamma_y \text{Year}_{yt} + \sum_{q} \delta_q \text{Quarter}_{qt} + u_i + \varepsilon_{it}
+\end{aligned}$$
+
+$$u_i \sim N(0, \sigma_u^2), \qquad \varepsilon_{it} \sim N(0, \sigma^2)$$
+
+where:
+
+- $i$ indexes economies and $t$ indexes quarters (2023 Q1 to 2025 Q4).
+- $\text{Unemp}_{it}$ is the unemployment rate (%) of economy $i$ in quarter $t$.
+- $\text{AI}_{it}$ is the quarterly average share of online job postings requiring emerging AI skills (%).
+- $\text{Adv}_i$ equals 1 if economy $i$ is classified by the IMF as an advanced economy and 0 if it is an emerging/developing economy (reference group).
+- $\text{GDPgrowth}_{it}$ is annual real GDP growth (%), $\text{Inflation}_{it}$ is annual average CPI inflation (%), and $\text{GDPpc}_{it}$ is GDP per capita in current U.S. dollars; these annual values are assigned to all quarters of the same year.
+- $\text{Year}_{yt}$ and $\text{Quarter}_{qt}$ are indicator variables for calendar year (reference: 2023) and quarter (reference: Q1).
+- $\beta_0$ is the intercept; $\beta_1$ is the association between AI adoption and log unemployment among emerging/developing economies; $\beta_2$ is the difference in log unemployment between advanced and emerging/developing economies when $\log(1 + \text{AI}) = 0$; $\beta_3$ is the difference in the AI slope between advanced and emerging/developing economies, so the AI slope among advanced economies is $\beta_1 + \beta_3$; $\beta_4$ to $\beta_6$ are associations with the macroeconomic covariates; $\gamma_y$ and $\delta_q$ capture common year and seasonal effects.
+- $u_i$ is the random intercept for economy $i$, representing persistent differences in baseline unemployment across economies, and $\varepsilon_{it}$ is the residual error.
+
+Because the outcome is log-transformed, $100 \times (e^{\beta} - 1)$ gives the approximate percent change in the unemployment rate associated with a one-unit increase in a predictor, holding other variables constant.
+
+**4.2 Rationale for the statistical model**
+
+The outcome is continuous, and our goal is inference about the adjusted association between AI adoption and unemployment, so a linear regression framework is appropriate. We log-transform the outcome and the AI share because both are strongly right-skewed in the EDA; we use $\log(1 + \text{AI})$ because many economy-quarters have an AI share of zero.
+
+Our data have a repeated-measures structure: each economy contributes up to 12 quarterly observations, and observations from the same economy are likely to be correlated (e.g., South Africa has persistently high unemployment). Ordinary least squares would treat these observations as independent and understate standard errors. A random intercept for each economy accounts for this within-economy correlation. We prefer random intercepts over economy fixed effects because economy group is constant within each economy, so fixed effects would absorb it and prevent us from estimating the interaction of interest. The interaction term tests whether the association between AI adoption and unemployment differs between advanced and emerging/developing economies, and we include macroeconomic covariates because Table 1 shows that the two groups differ systematically in GDP growth, inflation, and income, which may also affect unemployment. If mixed-effects models are not appropriate for this course, we will instead fit an ordinary linear regression with cluster-robust standard errors by economy.
 
 **4.3 Model Assumptions**
 
-**4.4 Model Assessment (how will you assess the assumptions and model performance?)**
+1.  **Linearity:** log unemployment is linearly related to each continuous predictor (on the scales used in the model).
+2.  **Independence:** after accounting for the economy-level random intercept, residuals are independent across observations. Residuals within the same economy may still be serially correlated across consecutive quarters, which we will check.
+3.  **Normality:** residuals $\varepsilon_{it}$ and random intercepts $u_i$ are approximately normally distributed.
+4.  **Equal variance:** residuals have constant variance across fitted values and across economy groups.
+5.  **Exogeneity of random effects:** random intercepts are uncorrelated with the predictors.
+6.  **No severe multicollinearity** among predictors.
+
+**4.4 Model Assessment**
+
+- **Linearity and equal variance:** plot residuals against fitted values and against each continuous predictor, separately by economy group.
+- **Normality:** Q-Q plots of the residuals and of the estimated random intercepts.
+- **Independence:** examine the autocorrelation of residuals within economies across consecutive quarters.
+- **Multicollinearity:** variance inflation factors (VIFs) for the fixed effects.
+- **Influential observations:** identify influential economies by refitting the model leaving out one economy at a time and by examining influence diagnostics; we will pay particular attention to the small economies with very high AI shares and to extreme inflation values (e.g., Argentina), and will consider transforming or capping inflation if needed.
+- **Interaction and model fit:** compare the models with and without the interaction term using a likelihood ratio test (fit by maximum likelihood), and report the intraclass correlation and marginal and conditional $R^2$.
+- **Sensitivity analyses:** refit the model (1) excluding economies with extreme AI shares or lower data-quality tiers, (2) using the AI share within high-exposure occupations as the primary independent variable, and (3) using the untransformed unemployment rate, to check whether our conclusions are robust.
 
 \newpage
 
