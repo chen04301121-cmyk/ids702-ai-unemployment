@@ -163,13 +163,11 @@ This proposal aims to examine the relationship between growing demand for artifi
 
 **Primary research question:** Among 82 economies observed quarterly from 2023 to 2025, is a higher share of online job postings requiring emerging AI skills associated with the unemployment rate, after adjusting for GDP growth, inflation, GDP per capita, year, and season? Does this association differ between advanced economies and emerging/developing economies?
 
-**Backup research question:** Is the association between AI skill demand and the unemployment rate stronger when AI demand is measured within occupations highly exposed to AI than within occupations with low exposure to AI, and does this difference vary between advanced and emerging/developing economies?
-
 #### 2 Study Population
 
-The AIAX dataset measures the prevalence of emerging AI skills in online job postings (collected by Lightcast and processed by the IMF) across 110 economies, with monthly economy-level observations. The Labor Statistics dataset provides labor market indicators, including unemployment rates, that originate from national statistical organizations and are compiled by the IMF. The WEO dataset provides annual macroeconomic indicators (real GDP growth, inflation, and GDP per capita) compiled by IMF staff.
+The AIAX dataset measures the prevalence of emerging AI skills in online job postings (collected by Lightcast and processed by the IMF) across 110 economies, with monthly economy-level observations. The Labor Statistics (LS) dataset provides labor market indicators, including unemployment rates, that originate from national statistical organizations and are compiled by the IMF. The WEO dataset provides annual macroeconomic indicators (real GDP growth, inflation, and GDP per capita) compiled by IMF.
 
-The unit of observation is an **economy-quarter**: the unemployment rate and AI skill demand within a given economy in a given quarter. We aggregate the monthly AI indicators to quarterly averages and assign annual WEO values to all quarters of the same year. After merging the three sources by ISO country code, year, and quarter, the analytic sample contains 826 economy-quarter observations from 82 economies (41 classified as advanced and 41 as emerging/developing economies by the IMF) between 2023 Q1 and 2025 Q4. Economies without both unemployment and AI data in a given quarter are excluded.
+The unit of observation is an **economy-quarter**, with each observation capturing macroeconomic indicators (e.g. unemployment rate and AI skill demand) for that particular country in a given quarter. We aggregate the monthly AI indicators to quarterly averages and assign annual WEO values to all quarters of the same year. After merging the three sources by ISO country code, year, and quarter, the analytic sample contains 826 economy-quarter observations from 82 economies (41 classified as advanced and 41 as emerging/developing economies by the IMF) between 2023 Q1 and 2025 Q4. Economies without both unemployment and AI data in a given quarter are excluded.
 
 #### 3 Outcomes, Exposures, and Additional Variables of Interest
 
@@ -177,21 +175,19 @@ The unit of observation is an **economy-quarter**: the unemployment rate and AI 
 
 | Variable Name | Description | Coding specification |
 |----|----|----|
-| `unemployment_rate` | Unemployment rate: percentage of the labor force that is unemployed, by economy and quarter (LS dataset) | Continuous, percent (0–100); higher values indicate higher unemployment. Log-transformed in the model. |
+| `unemployment_rate` | Unemployment rate: percentage of the labor force that is unemployed, by economy and quarter (Labor Statistics dataset) | Continuous, percent (0–100); higher values indicate higher unemployment. Log-transformed in the model. |
 
 3.2 Primary Independent Variable(s)
 
 | Variable Name | Description | Coding specification |
 |----|----|----|
-| `ai_share` | Share of online job postings requiring emerging AI skills, all occupations (AIAX "Share of Emerging AI"), quarterly average of monthly values | Continuous, percent; higher values indicate greater demand for AI skills. Modeled as log(1 + AI share) because of zeros and right skew. |
-| `economy_group` | IMF economy classification (interaction variable) | Categorical: 1 = Advanced economy, 0 = Emerging/developing economy (reference) |
+| `ai_share` | Share of online job postings requiring emerging AI skills, all occupations (AIAX "Share of Emerging AI"), quarterly average of monthly values | Continuous, percent; higher values indicate greater demand for AI skills. |
+| `economy_group` | International Monetary fund (IMF) economy classification (interaction variable) | Categorical: 1 = Advanced economy, 0 = Emerging/developing economy (reference) |
 
 3.3 Additional Variables of Interest (including potential confounders)
 
 | Variable Name | Description | Coding specification |
 |----|----|----|
-| `ai_share_high_exp` | Share of postings requiring emerging AI skills within high AI-exposure occupations (AIAX) | Continuous, percent (backup RQ and sensitivity analysis) |
-| `ai_share_low_exp` | Share of postings requiring emerging AI skills within low AI-exposure occupations (AIAX) | Continuous, percent (backup RQ) |
 | `gdp_growth` | Real GDP growth, constant prices (WEO) | Continuous, annual percent change |
 | `inflation` | CPI inflation, period average (WEO) | Continuous, annual percent change |
 | `gdp_per_capita` | GDP per capita, current prices (WEO) | Continuous, U.S. dollars; log-transformed in the model |
@@ -203,14 +199,14 @@ The unit of observation is an **economy-quarter**: the unemployment rate and AI 
 
 **4.1 Exploratory Data Analysis**
 
-The outcome (quarterly unemployment rate) is continuous, so we will summarize it with descriptive statistics and a histogram to assess its distribution and identify extreme values. Because our primary independent variable (the share of job postings requiring emerging AI skills) is also continuous, we will use a scatter plot of unemployment against AI adoption, with points colored and separate linear fits drawn by economy group (advanced vs. emerging/developing), to explore both the main relationship and the planned interaction. Given the skewness of both variables, we will also present this plot on log scales. Finally, we will present a Table 1 of medians and interquartile ranges for the outcome, AI adoption measures, and macroeconomic covariates by economy group, and we will summarize missingness across countries and quarters.
+The outcome (quarterly unemployment rate) is continuous, so we will summarize it with descriptive statistics and a histogram to assess its distribution and identify extreme values. Because our primary independent variable (the share of job postings requiring emerging AI skills) is also continuous, we will use a scatter plot of unemployment against AI adoption, with points colored and separate linear fits drawn by economy group (advanced vs. emerging/developing), to explore both the main relationship and the planned interaction.
 
 **4.2 Statistical Model**
 
 We will fit a linear mixed-effects model with a random intercept for each economy:
 
 $$\begin{aligned}
-\log(\text{Unemp}_{it}) = \; & \beta_0 + \beta_1 \log(1 + \text{AI}_{it}) + \beta_2 \text{Adv}_i + \beta_3 \left[\log(1 + \text{AI}_{it}) \times \text{Adv}_i\right] \\
+\log(\text{Unemp}_{it}) = \; & \beta_0 + \beta_1 \text{AI}_{it} + \beta_2 \text{Adv}_i + \beta_3 \left[\text{AI}_{it} \times \text{Adv}_i\right] \\
 & + \beta_4 \text{GDPgrowth}_{it} + \beta_5 \text{Inflation}_{it} + \beta_6 \log(\text{GDPpc}_{it}) \\
 & + \sum_{y} \gamma_y \text{Year}_{yt} + \sum_{q} \delta_q \text{Quarter}_{qt} + u_i + \varepsilon_{it}
 \end{aligned}$$
@@ -232,9 +228,9 @@ Because the outcome is log-transformed, $100 \times (e^{\beta} - 1)$ gives the a
 
 **4.2 Rationale for the statistical model**
 
-The outcome is continuous, and our goal is inference about the adjusted association between AI adoption and unemployment, so a linear regression framework is appropriate. We log-transform the outcome and the AI share because both are strongly right-skewed in the EDA; we use $\log(1 + \text{AI})$ because many economy-quarters have an AI share of zero.
+The outcome is continuous, and our goal is inference about the adjusted association between AI adoption and unemployment, so a linear regression framework is appropriate.
 
-Our data have a repeated-measures structure: each economy contributes up to 12 quarterly observations, and observations from the same economy are likely to be correlated (e.g., South Africa has persistently high unemployment). Ordinary least squares would treat these observations as independent and understate standard errors. A random intercept for each economy accounts for this within-economy correlation. We prefer random intercepts over economy fixed effects because economy group is constant within each economy, so fixed effects would absorb it and prevent us from estimating the interaction of interest. The interaction term tests whether the association between AI adoption and unemployment differs between advanced and emerging/developing economies, and we include macroeconomic covariates because Table 1 shows that the two groups differ systematically in GDP growth, inflation, and income, which may also affect unemployment. If mixed-effects models are not appropriate for this course, we will instead fit an ordinary linear regression with cluster-robust standard errors by economy.
+Our data have a repeated-measures structure: each economy contributes up to 12 quarterly observations, and observations from the same economy are likely to be correlated (e.g., South Africa has persistently high unemployment). Ordinary least squares would treat these observations as independent and understate standard errors. A random intercept for each economy accounts for this within-economy correlation. The interaction term tests whether the association between AI adoption and unemployment differs between advanced and emerging/developing economies, and we include macroeconomic covariates because Table 1 shows that the two groups differ systematically in GDP growth, inflation, and income, which may also affect unemployment. If mixed-effects models are not appropriate for this course, we will instead fit an ordinary linear regression with cluster-robust standard errors by economy.
 
 **4.3 Model Assumptions**
 
@@ -242,8 +238,7 @@ Our data have a repeated-measures structure: each economy contributes up to 12 q
 2.  **Independence:** after accounting for the economy-level random intercept, residuals are independent across observations. Residuals within the same economy may still be serially correlated across consecutive quarters, which we will check.
 3.  **Normality:** residuals $\varepsilon_{it}$ and random intercepts $u_i$ are approximately normally distributed.
 4.  **Equal variance:** residuals have constant variance across fitted values and across economy groups.
-5.  **Exogeneity of random effects:** random intercepts are uncorrelated with the predictors.
-6.  **No severe multicollinearity** among predictors.
+5.  **No severe multicollinearity** among predictors.
 
 **4.4 Model Assessment**
 
@@ -253,7 +248,6 @@ Our data have a repeated-measures structure: each economy contributes up to 12 q
 - **Multicollinearity:** variance inflation factors (VIFs) for the fixed effects.
 - **Influential observations:** identify influential economies by refitting the model leaving out one economy at a time and by examining influence diagnostics; we will pay particular attention to the small economies with very high AI shares and to extreme inflation values (e.g., Argentina), and will consider transforming or capping inflation if needed.
 - **Interaction and model fit:** compare the models with and without the interaction term using a likelihood ratio test (fit by maximum likelihood), and report the intraclass correlation and marginal and conditional $R^2$.
-- **Sensitivity analyses:** refit the model (1) excluding economies with extreme AI shares or lower data-quality tiers, (2) using the AI share within high-exposure occupations as the primary independent variable, and (3) using the untransformed unemployment rate, to check whether our conclusions are robust.
 
 \newpage
 
@@ -320,11 +314,14 @@ analysis_df %>%
   ) %>%
   add_overall() %>%
   as_kable(caption = "Table 1. Median (IQR) of key variables by economy group")
+
 ```
+
+Table 1:  Summary statistics for variables used in the analysis in Option 1
 
 **Outcome.** The analytic sample contains 826 economy-quarter observations from 82 economies (403 from advanced economies and 423 from emerging/developing economies) between 2023 and 2025. The median quarterly unemployment rate is 5.17% (IQR: 3.60–7.39%). The distribution is right-skewed, with a small number of observations above 20% from South Africa and Botswana, two economies with well-documented structural unemployment. We retain these observations and will consider a log transformation of the outcome.
 
-**Key relationship.** The share of job postings requiring emerging AI skills is also highly right-skewed: most observations are below 2%, while a few smaller economies (e.g., Cyprus, Slovenia, Latvia, Bolivia, Bosnia and Herzegovina, and North Macedonia) exceed 5%. Because these economies have relatively small online job-posting markets, their high values may partly reflect measurement noise. We will assess the sensitivity of our results to these observations.
+**Key relationship.** The share of job postings requiring emerging AI skills is also highly right-skewed: most observations are below 2%, while a few smaller economies (e.g., Cyprus, Slovenia, Latvia, Bolivia, Bosnia and Herzegovina, and North Macedonia) exceed 5%. Because these economies have relatively small online job-posting markets, their high values may partly reflect measurement noise.
 
 **Covariates.** Advanced economies have more than twice the median AI share of emerging/developing economies (0.22% vs. 0.09%), but they also differ systematically in GDP growth, inflation, and GDP per capita (Table 1). This highlights the need to adjust for these macroeconomic variables as potential confounders.
 
@@ -384,8 +381,8 @@ For this analysis, we will focus on the data in the latest wave 16 in 2022.
 
 | Variable Name | Description                     | Coding specification |
 |---------------|---------------------------------|----------------------|
-| Age           | Age is measured in years        |                      |
-| Education     | Respondent's years of education |                      |
+| Age           | Age is measured in years        | Continuous numeric   |
+| Education     | Respondent's years of education | Continuous numeric   |
 
 #### 4 Statistical Analysis Plan
 
@@ -586,6 +583,6 @@ ggplot(hrs_eda, aes(x = r16agey_e, y = r16cog27)) +
 
 ## Team Charter
 
-1.  When will you meet as a team to work on the project components? Will these meetings be held in person or virtually?
-2.  What is your group policy on missing team meetings (e.g., how much advance notice should be provided)?
-3.  How will your team communicate (email, Slack, text messages)? What is your policy on appropriate response time (within a certain number of hours? Nights/weekends?)?
+1.  When will you meet as a team to work on the project components? Will these meetings be held in person or virtually? The meeting(s) will be held in person during weekdays and/or via Zoom as required outside of academic operational hours.
+2.  What is your group policy on missing team meetings (e.g., how much advance notice should be provided)? In the event of absence, the team member must communicate with the remainder of the team at least 24 hours in advance to reschedule accordingly.
+3.  How will your team communicate (email, Slack, text messages)? What is your policy on appropriate response time (within a certain number of hours? Nights/weekends?)? The team will communicate regularly through Slack during regular working hours (9:00am-5:00pm). Weekend communication is permissible during appropriate hours as well.
